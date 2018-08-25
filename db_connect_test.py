@@ -10,7 +10,5 @@ if __name__ == '__main__':
     collection = db.task_list
     for data in collection.find():
         print(data)
-        if data["description"].startswith("morning"):
-            collection.remove({"description": data["description"]})
 
 
