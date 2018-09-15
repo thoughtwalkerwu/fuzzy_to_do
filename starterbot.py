@@ -7,17 +7,19 @@ import datetime
 from slackclient import SlackClient
 import pymongo
 
-from task_generators import MorningTask, DailyTask
+
 from constants import BUTTON_JSON
 from task_finder import TaskFinder
+from util import db_url, slack_token
+from task_generator_dom import done_task
 
-token = os.environ.get('SLACK_BOT_TOKEN')
+token = slack_token
 print(token)
 slack_client = SlackClient(token)
 starterbot_id = None
 im_channel_id = None
 
-client = pymongo.MongoClient('192.168.100.108', 27017)
+client = pymongo.MongoClient(db_url, 27017)
 db = client['test_db']
 task_collection = db.task_list
 done_collection = db.done_list
@@ -26,11 +28,8 @@ RTM_READ_DELAY = 1
 EXAMPLE_COMMAND = "do"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
-task_finder = TaskFinder(task_collection, done_collection)
-
-morning_obj = MorningTask(task_collection, datetime.time(21, 0, 0))
-daily_obj = DailyTask(task_collection)
-task_handlers = {morning_obj, daily_obj}
+task_finder = TaskFinder(task_collection)
+displayed_task = None
 
 
 def parse_bot_command(slack_events):
@@ -70,21 +69,29 @@ def handle_command(command: str, channel, condition=None):
     # Finds and executes the given command, filling in response
     response = u""
     # This is where you start to implement more commands!
-    for handler in task_handlers:
-        if command.startswith(handler.TASK_COMMAND):
-            handler.handle_request(command, condition)
- 
+    # for handler in task_handlers:
+    #     if command.startswith(handler.TASK_COMMAND):
+    #         handler.handle_request(command, condition)
+    if command.startswith("next"):
+        global displayed_task
+        displayed_task = task_finder.next(datetime.datetime.now())
+        response = displayed_task.description
+
+    elif command.startswith("done"):
+        done_task(displayed_task, datetime.datetime.now())
+        task_finder.update_task_list()
+        response = "{} is done! Well done!".format(displayed_task.description)
+
     # Sends the response back to the channel
     slack_client.api_call(
         "chat.postMessage",
         channel=channel,
-        text=response or default_response,
-        attachments=BUTTON_JSON['attachments']
+        text=response or default_response#,
+        # attachments=BUTTON_JSON['attachments']
     )
 
 
 if __name__ == "__main__":
-    print(list(task_finder.update_task_list()))
     print(task_finder.next(datetime.datetime.now()))
     if slack_client.rtm_connect(with_team_state=False):
         print("Starter Bot connected and running!")
@@ -95,17 +102,17 @@ if __name__ == "__main__":
             if raw_command:
                 handle_command(raw_command, channel)
             # morning_tasks
-            if morning_obj.is_morning(datetime.datetime.now()):
-                tasks = task_collection.find({"time_slot": "morning"})
-                task_list = "Good morning! let's begin moving!\n"
-                for task in tasks:
-                    task_list += u"{}\n".format(task["description"]) 
-                # Sends the response back to the channel
-                slack_client.api_call(
-                    "chat.postMessage",
-                    channel=im_channel_id,
-                    text=task_list,
-                    )
+            # if morning_obj.is_morning(datetime.datetime.now()):
+            #     tasks = task_collection.find({"time_slot": "morning"})
+            #     task_list = "Good morning! let's begin moving!\n"
+            #     for task in tasks:
+            #         task_list += u"{}\n".format(task["description"])
+            #     # Sends the response back to the channel
+            #     slack_client.api_call(
+            #         "chat.postMessage",
+            #         channel=im_channel_id,
+            #         text=task_list,
+            #         )
 
             time.sleep(RTM_READ_DELAY)
     else:

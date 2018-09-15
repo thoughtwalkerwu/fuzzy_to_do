@@ -1,147 +1,40 @@
 import datetime
-import re
-import pymongo
+
+from frequent_task import UnscheduledTaskGen, WeeklyTaskGen, TaskTemplate
 
 
-class MorningTask:
-    TASK_COMMAND = "morning"
+def parse_task_generator_list(gen_json_list):
+    gen_list = []
+    for gen_db_obj in gen_json_list:
+        print(gen_db_obj)
+        gen_list.append(parse_task_generator(**gen_db_obj))
 
-    def __init__(self, db_collection: pymongo.collection.Collection, morning: datetime.time):
-        self.hour = morning.hour
-        self.minute = morning.minute
-        self.collection = db_collection
-
-    def add_task(self, description: str, frequency: str="everyday", cancellable: bool=True, priority: int=5):
-        post = {
-            "description": description,
-            "time_slot": "morning",
-            "frequency": frequency,
-            "cancellable": cancellable,
-            "priority": priority
-        }
-        self.collection.insert_one(post)
-
-    def add_once_task(self, description: str, cancellable: bool=True, priority: int=5):
-        self.add_task(description, frequency="once", cancellable=cancellable, priority=priority)
-
-    def handle_request(self, command, condition):
-        response = ""
-        if command == self.TASK_COMMAND:
-            response += "朝のタスク一覧\n"
-            for task in self.collection.find({"time_slot": condition['time_slot'], "position": condition['position']}):
-                response += task["description"] + "\n"
-        elif command.startswith(self.TASK_COMMAND):
-
-            task_name = re.sub(self.TASK_COMMAND + " ", "", command)
-            self.add_task(task_name)
-            print(task_name)
-            response += task_name + "is added"
-        return response
-
-    def is_morning(self, now: datetime.time):
-        print(now.minute == self.minute)
-        print(now.second == 0)
-        if self.hour == now.hour and self.minute == now.minute and now.second == 0:
-            print("morning now")
-            return True
+    return gen_list
 
 
-class DailyTask:
-    TASK_COMMAND = "daily"
+def parse_task_generator(**kwargs):
+    task_type = kwargs['task_type']
 
-    def __init__(self, db_collection: pymongo.collection.Collection):
-        self.collection = db_collection
-
-    def add_task(self,
-                 description: str,
-                 position: str="home",
-                 time_slot: str='any',
-                 priority: int=5,
-                 time_needed: int=10,
-                 frequency: int=1,
-                 weekday: set=(0, 1, 2, 3, 4, 5, 6),
-                 cancellable: bool=False,
-                 before: int=None,
-                 after: int=None,
-                 due: datetime.date=None,
-                 schedule: str=None,
-                 grouping: str=None,
-                 cost: int=0
-                 ):
-        post = {
-            "description": description,
-            "time_slot": time_slot,
-            "schedule": schedule,
-            "time_needed": time_needed,
-            "frequency": frequency,
-            "weekday": weekday,
-            "before": before,
-            "after": after,
-            "due": due,
-            "cancellable": cancellable,
-            "position": position,
-            "grouping": grouping,
-            "priority": priority,
-            "cost": cost,
-            'closed': False
-        }
-        self.collection.insert_one(post)
-
-    def handle_request(self, command, task_condition):
-        if task_condition is None:
-            condition = {'time_slot': "any", 'position': "any"}
-        else:
-            condition = task_condition
-
-        response = ""
-        if command == self.TASK_COMMAND:
-            response += "今日のタスク一覧\n"
-            for task in self.collection.find({"time_slot": condition['time_slot'], "position": condition['position']}):
-                response += task["description"] + "\n"
-        elif command.startswith(self.TASK_COMMAND):
-
-            task_name = re.sub(self.TASK_COMMAND + " ", "", command)
-            self.add_task(task_name)
-            print(task_name)
-            response += task_name + "is added"
-        return response
+    if task_type == "Unscheduled":
+        return UnscheduledTaskGen(**kwargs)
+    elif task_type == "Weekly":
+        return WeeklyTaskGen(**kwargs)
 
 
-class TaskBase:
-    TASK_COMMAND = "task"
+class TaskGenerator:
+    def __init__(self, task_generators: list):
+        self.task_generators = task_generators
 
-    def __init__(self, db_collection: pymongo.collection.Collection):
-        self.collection = db_collection
+    def generate_tasks(self, time: datetime.datetime):
+        tasks = []
+        for generator in self.task_generators:
+            task = generator.generate_task(time)
+            if task is not None:
+                tasks.append(task)
+        return tasks
 
-    def add_task(self,
-                 description: str,
-                 position: str="home",
-                 time_slot: str='any',
-                 priority: int=5,
-                 time_needed: int=10,
-                 frequency: int=1,
-                 weekday: set=(0, 1, 2, 3, 4, 5, 6),
-                 cancellable: bool=False,
-                 before: datetime.time=None,
-                 after: datetime.time=None,
-                 due: datetime.date=None,
-                 schedule: str=None,
-                 grouping: str=None,
-                 ):
-        post = {
-            "description": description,
-            "time_slot": time_slot,
-            "schedule": schedule,
-            "time_needed": time_needed,
-            "frequency": frequency,
-            "weekday": weekday,
-            "before": before,
-            "after": after,
-            "due": due,
-            "cancellable": cancellable,
-            "position": position,
-            "grouping": grouping,
-            "priority": priority,
-            'closed': False
-        }
-        self.collection.insert_one(post)
+    def to_db_obj(self):
+        db_obj = {}
+        for gen in self.task_generators:
+            db_obj[gen.description] = gen.to_db_obj()
+

@@ -1,6 +1,11 @@
 import datetime
 import re
 
+import os
+
+db_url = os.environ.get('MONGO_URL')
+slack_token = os.environ.get('SLACK_BOT_TOKEN')
+
 def weekday_str_to_int(weekday: str):
     if weekday == "Monday":
         return 0
@@ -17,24 +22,8 @@ def weekday_str_to_int(weekday: str):
     elif weekday == "Sunday":
         return 6
     else:
-        raise ValueError("weekday string is expected, but get {}.".format(weekday)
+        raise ValueError("weekday string is expected, but get {}.".format(weekday))
 
-# def get_schedule_priority_func(schedule: str):
-#     frequent_match = re.match("^every (?P<days>\d+)days$", schedule):
-#     if frequent_match:
-#         frequency = int(frequent_match.group('days'))
-#         def priority_func(last_done: datetime.datetime, now:datetime.datetime):
-#             return max((now - last_done).days - frequency, 0)
-#         return priority_func
-#
-#     if re.match("^every (?P<days>\d+)days$", schedule):
-#
-#         elif sch_body.endswith("day"):
-#             if now.weekday():
-#     elif sch_type == "at":
-#
-#     elif sch_type == "due":
-#
-#
-#     else:
-#         return 0
+
+def daterange(d1, d2):
+    return (d1 + datetime.timedelta(days=i) for i in range((d2 - d1).days))
