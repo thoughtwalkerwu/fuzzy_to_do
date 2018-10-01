@@ -1,6 +1,6 @@
 import datetime
 import pymongo
-from task import parse_task
+from task import parse_task, Task
 
 
 class TaskFinder:
@@ -45,7 +45,7 @@ class TaskFinder:
         for task in self.tasks:
             priority = task.get_priority(now, self.position, self.time_slot)
 
-            if priority > highest_priority:
+            if priority > highest_priority and not task.postponed:
                 highest_priority = priority
                 highest_task = task
 
@@ -54,6 +54,9 @@ class TaskFinder:
 
         return highest_task
 
+    def postpone(self, task: Task):
+        task.postponed = True
+
 
 if __name__ == "__main__":
     client = pymongo.MongoClient('192.168.100.108', 27017)
@@ -61,6 +64,6 @@ if __name__ == "__main__":
     _task_collection = db.task_list
     _done_collection = db.done_list
 
-    finder = TaskFinder(_task_collection, _done_collection)
+    finder = TaskFinder(_task_collection)
 
     print(finder.next(datetime.datetime.now()))

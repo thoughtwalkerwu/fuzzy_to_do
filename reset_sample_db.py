@@ -5,6 +5,7 @@ import datetime
 import pymongo
 
 from frequent_task import UnscheduledTaskGen, WeeklyTaskGen, TaskTemplate
+from task_generator_dom import insert_generator
 from util import db_url
 
 client = pymongo.MongoClient(db_url, 27017)
@@ -16,8 +17,8 @@ task_generator_collection = db.gen_list
 # # daily_obj = TaskBase(task_collection)
 # task_handlers = {morning_obj, daily_obj}
 
-task_collection.delete_many({'position':"any"})
-task_collection.delete_many({'position':"home"})
+# task_collection.delete_many({'position':"any"})
+# task_collection.delete_many({'position':"home"})
 
 task_generator_collection.delete_many({'position':"home"})
 task_generator_collection.delete_many({'task_type': 'Unscheduled'})
@@ -25,12 +26,15 @@ task_generator_collection.delete_many({'task_type': 'Unscheduled'})
 
 tasks = [
     {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 2,
+     'task': {'priority': 4, 'due': datetime.datetime(2018, 1, 10, 10, 0, 0), 'time_needed': 30,
+              'description': 'タスクリスト見直し', 'time_slot': 'any', 'cancellable': False, 'position': 'home'}},
+    {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 2,
      'task': {'priority': 4, 'due': datetime.datetime(2018, 1, 10, 10, 0, 0), 'time_needed': 15,
               'description': 'モゴモゴバスター', 'time_slot': 'any', 'cancellable': False, 'position': 'home'}},
     {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 2,
      'task': {'priority': 4, 'due': datetime.datetime(2018, 1, 10, 10, 0, 0), 'time_needed': 15, 'description': '筋肉体操',
               'time_slot': 'any', 'cancellable': False, 'position': 'home'}},
-    {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 2,
+    {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 3,
      'task': {'priority': 4, 'due': datetime.datetime(2018, 1, 10, 10, 0, 0), 'time_needed': 15,
               'description': 'タイピング練習', 'time_slot': 'any', 'cancellable': False, 'position': 'home'}},
     {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 2,
@@ -51,7 +55,7 @@ tasks = [
     {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 7,
      'task': {'priority': 4, 'due': datetime.datetime(2018, 1, 10, 10, 0, 0), 'time_needed': 15,
               'description': 'シンクネット取り換え', 'time_slot': 'any', 'cancellable': False, 'position': 'home'}},
-    {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 5,
+    {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 9, 16, 12, 30, 0), 'frequency': 5,
      'task': {'priority': 4, 'due': datetime.datetime(2018, 1, 10, 10, 0, 0), 'time_needed': 15, 'description': 'トイレ掃除',
               'time_slot': 'any', 'cancellable': False, 'position': 'home'}},
     {'task_type': 'Unscheduled', 'last_done': datetime.datetime(2018, 1, 1, 10, 0, 0), 'frequency': 10,
@@ -79,9 +83,7 @@ tasks = [
 ]
 
 for gen in tasks:
-    generator = UnscheduledTaskGen(**gen)
-    print(generator.to_db_obj())
-    task_generator_collection.insert_one(generator.to_db_obj())
+    insert_generator(gen)
 
 for data in task_generator_collection.find():
     print(data)

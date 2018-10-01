@@ -25,6 +25,7 @@ class FrequentTaskGenBase:
 
     def to_db_obj_base(self):
         return {
+            'description' : (self.task_base.generate(self.last_done)).description,
             'task': (self.task_base.generate(self.last_done)).to_db_obj(),
             'last_done': self.last_done,
         }

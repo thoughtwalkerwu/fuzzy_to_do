@@ -6,6 +6,7 @@ import os
 db_url = os.environ.get('MONGO_URL')
 slack_token = os.environ.get('SLACK_BOT_TOKEN')
 
+
 def weekday_str_to_int(weekday: str):
     if weekday == "Monday":
         return 0

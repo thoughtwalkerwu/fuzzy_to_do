@@ -12,7 +12,10 @@ class Task:
         self.cancellable = kwargs['cancellable']
         self.due = kwargs['due']
 
-        self.postponed = False
+        self.postponed = datetime.timedelta(0)
+
+    def postpone(self, delta: datetime.timedelta):
+        self.postponed = delta
 
     def get_priority(self,
                      date: datetime.datetime,
@@ -26,9 +29,11 @@ class Task:
         if self.time_slot == time_slot:
             priority += 3
 
-        if self.due > self.due:
-            delta = date - self.due
-            priority += delta.days
+        # Due priority calculation
+        theo_delta = self.due - date
+        delta_days = max(theo_delta.total_seconds()/(60*60*24) + 5/self.priority, 0.1)
+
+        priority += 10/delta_days
 
         if self.postponed:
             priority -= 1
