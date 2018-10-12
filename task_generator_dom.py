@@ -10,6 +10,20 @@ from task_generators import TaskGenerator, parse_task_generator, parse_task_gene
 # task_generator = TaskGenerator(**task_generator_collection.find())
 #
 
+
+def task_exist(task_name):
+    client = pymongo.MongoClient(db_url, 27017)
+    db = client['test_db']
+    task_collection = db.task_list
+
+    data = task_collection.find_one({'description': task_name})
+
+    if data is not None:
+        return True
+    else:
+        return False
+
+
 def done_task(task, time: datetime.datetime):
     client = pymongo.MongoClient(db_url, 27017)
     db = client['test_db']
@@ -25,6 +39,24 @@ def done_task(task, time: datetime.datetime):
     if generator.last_done < time:
         task_generator_collection.update(query, {'$set': {'last_done': time}})
         task_collection.delete_one({'description': task.description})
+        task_collection.insert_one(generator.generate_task(datetime.datetime.now()).to_db_obj())
+
+
+def done_task_by_name(task_name, time: datetime.datetime):
+    client = pymongo.MongoClient(db_url, 27017)
+    db = client['test_db']
+    task_generator_collection = db.gen_list
+    task_collection = db.task_list
+
+    # task_generator = TaskGenerator(**task_generator_collection.find())
+    query = {'task.description': task_name}
+    print(task_name)
+    data = task_generator_collection.find_one(query)
+    print(data)
+    generator = parse_task_generator(**data)
+    if generator.last_done < time:
+        task_generator_collection.update(query, {'$set': {'last_done': time}})
+        task_collection.delete_one({'description': task_name})
         task_collection.insert_one(generator.generate_task(datetime.datetime.now()).to_db_obj())
 
 

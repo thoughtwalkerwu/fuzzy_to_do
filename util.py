@@ -28,3 +28,11 @@ def weekday_str_to_int(weekday: str):
 
 def daterange(d1, d2):
     return (d1 + datetime.timedelta(days=i) for i in range((d2 - d1).days))
+
+
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
