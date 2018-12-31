@@ -1,6 +1,6 @@
 import datetime
 
-from frequent_task import UnscheduledTaskGen, WeeklyTaskGen, TaskTemplate
+from frequent_task import UnscheduledTaskGen, WeeklyTaskGen, TaskTemplate, Task
 
 
 def parse_task_generator_list(gen_json_list):
@@ -19,7 +19,6 @@ def parse_task_generator(**kwargs):
         return UnscheduledTaskGen(**kwargs)
     elif task_type == "Weekly":
         return WeeklyTaskGen(**kwargs)
-
 
 class TaskGenerator:
     def __init__(self, task_generators: list):

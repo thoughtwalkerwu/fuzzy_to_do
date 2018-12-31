@@ -1,10 +1,4 @@
 import datetime
-import re
-
-import os
-
-db_url = os.environ.get('MONGO_URL')
-slack_token = os.environ.get('SLACK_BOT_TOKEN')
 
 
 def weekday_str_to_int(weekday: str):
@@ -36,3 +30,11 @@ def is_int(s):
         return True
     except ValueError:
         return False
+
+
+def parse_command(command_list: list, line: str):
+    for command in command_list:
+        if line.startswith(command):
+            args = line.lstrip(command).strip().split()
+            return command, args
+    return None, None

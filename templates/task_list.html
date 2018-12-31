@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task list</title>
+</head>
+<body>
+    <h1>{{head_message}}</h1>
+
+    <table>
+        <tr>
+            <th>タスク名称</th>
+            <th>スコア</th>
+            <th>完了</th>
+        </tr>
+        {% for task in tasks %}
+        <tr>
+            <td>{{task.description}}</td>
+            <td>{{task.priority}}</td>
+            <td>
+                <form action="/task_list" method="POST">
+                    <input type="submit" name="submit" value="DONE"/>
+                    <input type="hidden" name="done_task" value="{{task.description}}" />
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
